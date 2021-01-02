@@ -21,12 +21,12 @@ define( 'LP_ADDON_PayPingPAYMENT_REQUIRE_VER', '1.0.0' );
 /**
  * Class LP_Addon_PayPingPayment_Preload
  */
-class LP_Addon_PayPingPayment_Preload {
+class LP_Addon_PayPingPayment_Preload{
 
 	/**
 	 * LP_Addon_PayPingPayment_Preload constructor.
 	 */
-	public function __construct() {
+	public function __construct(){
 		load_plugin_textdomain( 'learnpress-payping', false, basename( dirname(__FILE__) ) . '/languages' );
 		add_action( 'learn-press/ready', array( $this, 'load' ) );
 		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
@@ -35,7 +35,7 @@ class LP_Addon_PayPingPayment_Preload {
 	/**
 	 * Load addon
 	 */
-	public function load() {
+	public function load(){
 		LP_Addon::load( 'LP_Addon_PayPingPayment', 'inc/load.php', __FILE__ );
 		remove_action( 'admin_notices', array( $this, 'admin_notices' ) );
 	}

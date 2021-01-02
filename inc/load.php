@@ -34,7 +34,7 @@ if ( ! class_exists( 'LP_Addon_PayPingPayment' ) ) {
 		}
 
 		/**
-		 * Define Learnpress Pay.ir payment constants.
+		 * Define Learnpress PayPing.ir payment constants.
 		 *
 		 */
 		protected function _define_constants() {
@@ -58,7 +58,7 @@ if ( ! class_exists( 'LP_Addon_PayPingPayment' ) ) {
 		protected function _init_hooks() {
 			// add payment gateway class
 			add_filter( 'learn_press_payment_method', array( $this, 'add_payment' ) );
-			add_filter( 'learn-press/payment-methods', array( $this, 'add_payment' ) );
+			add_filter( 'learn-press_payment-methods', array( $this, 'add_payment' ) );
 		}
 
 		/**
@@ -68,7 +68,7 @@ if ( ! class_exists( 'LP_Addon_PayPingPayment' ) ) {
 		protected function _enqueue_assets() {
 			return;
 			
-			if (LP()->settings->get( 'learn_press_payping.enable' ) == 'yes' ) {
+			if (LP()->settings->get( 'learn_press_payping_enable' ) == 'yes' ) {
 				$user = learn_press_get_current_user();
 
 				learn_press_assets()->enqueue_script( 'learn-press-payping-payment', $this->get_plugin_url( 'assets/js/script.js' ), array() );
@@ -82,7 +82,7 @@ if ( ! class_exists( 'LP_Addon_PayPingPayment' ) ) {
 		}
 
 		/**
-		 * Add Pay.ir to payment system.
+		 * Add PayPing.ir to payment system.
 		 *
 		 * @param $methods
 		 *
@@ -90,7 +90,6 @@ if ( ! class_exists( 'LP_Addon_PayPingPayment' ) ) {
 		 */
 		public function add_payment( $methods ) {
 			$methods['payping'] = 'LP_Gateway_PayPing';
-
 			return $methods;
 		}
 

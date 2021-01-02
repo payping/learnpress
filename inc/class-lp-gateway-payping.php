@@ -16,17 +16,17 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		/**
 		 * @var string
 		 */
-		private $sendUrl = 'https://payping.ir/v2/pay';
+		private $sendUrl = 'https://api.payping.ir/v2/pay';
 		
 		/**
 		 * @var string
 		 */
-		private $gatewayUrl = 'https://payping.ir/v2/pay/gotoipg/';
+		private $gatewayUrl = 'https://api.payping.ir/v2/pay/gotoipg';
 		
 		/**
 		 * @var string
 		 */
-		private $verifyUrl = 'https://payping.ir/v2/pay/verify';
+		private $verifyUrl = 'https://api.payping.ir/v2/pay/verify';
 		
 		/**
 		 * @var string
@@ -58,7 +58,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		/**
 		 * LP_Gateway_PayPing constructor.
 		 */
-		public function __construct() {
+		public function __construct(){
 			$this->id = 'payping';
 
 			$this->method_title       =  __( 'درگاه پرداخت پی‌پینگ', 'learnpress-payping' );;
@@ -72,13 +72,11 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 			$settings = LP()->settings;
 
 			// Add default values for fresh installs
-			if ( $settings->get( "{$this->id}.enable" ) ) {
+			if ( $settings->get( "learn_press_{$this->id}_enable" ) ) {
 				$this->settings                     = array();
-				$this->settings['token']        = $settings->get( "{$this->id}.token" );
+				$this->settings['token']        = $settings->get( "learn_press_{$this->id}_token" );
 			}
-			
 			$this->token = $this->settings['token'];
-			
 			
 			if ( did_action( 'learn_press/payping-add-on/loaded' ) ) {
 				return;
@@ -110,7 +108,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 *
 		 * @return array
 		 */
-		public function register_web_hook() {
+		public function register_web_hook(){
 			learn_press_register_web_hook( 'payping', 'learn_press_payping' );
 		}
 	
@@ -125,8 +123,8 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 				array(
 					array(
 						'title'   => __( 'فعالسازی', 'learnpress-payping' ),
-						'id'      => 'enable',
-						'default' => 'no',
+						'id'      => '[enable]',
+						'default' => 'yes',
 						'type'    => 'yes-no'
 					),
 					array(
@@ -139,7 +137,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 							'state'       => 'show',
 							'conditional' => array(
 								array(
-									'field'   => 'enable',
+									'field'   => '[enable]',
 									'compare' => '=',
 									'value'   => 'yes'
 								)
@@ -159,7 +157,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 							'state'       => 'show',
 							'conditional' => array(
 								array(
-									'field'   => 'enable',
+									'field'   => '[enable]',
 									'compare' => '=',
 									'value'   => 'yes'
 								)
@@ -174,7 +172,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 							'state'       => 'show',
 							'conditional' => array(
 								array(
-									'field'   => 'enable',
+									'field'   => '[enable]',
 									'compare' => '=',
 									'value'   => 'yes'
 								)
@@ -190,7 +188,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 *
 		 * @return array
 		 */
-		public function error_message() {
+		public function error_message(){
 			if( ! session_id() ){ session_start(); }
 			if(isset($_SESSION['payping_error']) && intval($_SESSION['payping_error']) === 1) {
 				$_SESSION['payping_error'] = 0;
@@ -202,9 +200,9 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		/**
 		 * @return mixed
 		 */
-		public function get_icon() {
+		public function get_icon(){
 			if ( empty( $this->icon ) ) {
-				$this->icon = LP_Payping_uri . '/assets/img/logo.png';
+				$this->icon = plugin_dir_url( __DIR__ ) . 'assets/img/logo.png';
 			}
 			return parent::get_icon();
 		}
@@ -214,8 +212,8 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 *
 		 * @return bool
 		 */
-		public function payping_available() {
-			if ( LP()->settings->get( "{$this->id}.enable" ) != 'yes' ) {
+		public function payping_available(){
+			if( LP()->settings->get( "learn_press_{$this->id}_enable" ) != 'yes' ) {
 				return false;
 			}
 			return true;
@@ -226,14 +224,14 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 *
 		 * @return array
 		 */
-		public function get_form_data() {
+		public function get_form_data(){
 			if ( $this->order ) {
 				$user            = learn_press_get_current_user();
 				$currency_code = learn_press_get_currency()  ;
-				if ($currency_code == 'IRR') {
-					$amount = $this->order->order_total ;
-				} else {
-					$amount = $this->order->order_total * 10;
+				if ( $currency_code == 'IRR' || $currency_code == 'irr' ){
+					$amount = $this->order->order_total / 10;
+				}else{
+					$amount = $this->order->order_total;
 				}
 
 				$this->form_data = array(
@@ -259,7 +257,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 * @throws Exception
 		 * @throws string
 		 */
-		public function validate_fields() {
+		public function validate_fields(){
 			$posted        = learn_press_get_request( 'learn-press-payping' );
 			$email   = !empty( $posted['email'] ) ? $posted['email'] : "";
 			$mobile  = !empty( $posted['mobile'] ) ? $posted['mobile'] : "";
@@ -277,7 +275,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 * @return array
 		 * @throws string
 		 */
-		public function process_payment( $order ) {
+		public function process_payment( $order ){
 			$this->order = learn_press_get_order( $order );
 			$payping = $this->send();
 			$gateway_url = $this->gatewayUrl;
@@ -308,7 +306,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 				$TokenCode = $this->form_data['token'];
 				
 				$returnUrl = get_site_url() . '/?' . learn_press_get_web_hook( 'payping' ) . '=1&order_id='.$this->order->get_id();
-				
+
 				$params = array(
                         'amount'        => $amount,
                         'returnUrl'     => $returnUrl,
@@ -317,7 +315,20 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
                         'clientRefId'   => $clientRefId,
                         'description'   => $description
                 );
-				$args['body'] = json_encode( $params, true );
+				$args = array(
+                    'body' => json_encode( $params, true ),
+                    'timeout' => '45',
+                    'redirection' => '5',
+                    'httpsversion' => '1.0',
+                    'blocking' => true,
+	                'headers' => array(
+		              'Authorization' => 'Bearer '.$TokenCode,
+		              'Content-Type'  => 'application/json',
+		              'Accept' => 'application/json'
+		              ),
+                    'cookies' => array()
+                );
+
 				$PayResponse = wp_remote_post( $this->sendUrl, $args );
         		$ResponseXpId = wp_remote_retrieve_headers( $PayResponse )['x-paypingrequest-id'];
 				if( is_wp_error( $PayResponse ) ){
@@ -328,10 +339,14 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 						if ( isset( $PayResponse["body"] ) && $PayResponse["body"] != '' ) {
 							$CodePay = wp_remote_retrieve_body( $PayResponse );
 							$CodePay =  json_decode( $CodePay, true );
-							var_dump( $CodePay );
-							wp_redirect( sprintf( '%s/%s', $this->gatewayUrl, $CodePay["code"] ) );
-							exit;
-							
+							if( isset( $CodePay ) && $CodePay != '' ){
+								$this->gatewayUrl = sprintf( '%s/%s', $this->gatewayUrl, $CodePay["code"] );
+								return true;
+							}else{
+								wp_redirect( sprintf( '%s/%s', $this->gatewayUrl, $CodePay["code"] ) );
+								exit;
+							}
+							return false;
 						}else{
 							return false;
 						}
@@ -347,38 +362,51 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 * Handle a web hook
 		 *
 		 */
-		public function web_hook_process_payping() {
+		public function web_hook_process_payping(){
 			$request = $_REQUEST;
 			
-			if(isset($request['learn_press_payping']) && intval($request['learn_press_payping']) === 1) {
-				$token = $_GET['token'];
-				$ch = curl_init();
-				curl_setopt($ch, CURLOPT_URL, $this->verifyUrl);
-				curl_setopt($ch, CURLOPT_POSTFIELDS, "token=".$this->token."&token=$token");
-				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-				curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-				$result = curl_exec($ch);
-				curl_close($ch);
-				$result = json_decode($result);
-				
+			if( isset($request['learn_press_payping']) && intval($request['learn_press_payping']) === 1 ){
 				$order = LP_Order::instance( $request['order_id'] );
 				$currency_code = learn_press_get_currency();
-				if ($currency_code == 'IRR') {
+				if( $currency_code == 'IRR' || $currency == 'irr' ){
+					$amount = $order->order_total / 10;
+				}else{
 					$amount = $order->order_total;
-				} else {
-					$amount = $order->order_total * 10 ;
 				}
-				
-				if(intval($result->status) === 1 && $result->amount ==  $amount) {
-					$this->authority = intval($_GET['Authority']);
-					$this->payment_status_completed($order , $request);
-					wp_redirect(esc_url( $this->get_return_url( $order ) ));
+				$Amount = $amount;
+				$refid = $_POST['refid'];
+				$data = array('refId' => $refid, 'amount' => $Amount);
+				$args = array(
+					'body' => json_encode($data),
+					'timeout' => '45',
+					'redirection' => '5',
+					'httpsversion' => '1.0',
+					'blocking' => true,
+					'headers' => array(
+					'Authorization' => 'Bearer ' . $this->token,
+					'Content-Type'  => 'application/json',
+					'Accept' => 'application/json'
+					),
+				 'cookies' => array()
+				);
+				$response = wp_remote_post( $this->verifyUrl, $args);
+				$body = wp_remote_retrieve_body( $response );
+//				$XPP_ID = $response["headers"]["x-paypingrequest-id"];
+				if( is_wp_error($response) ){
+					wp_redirect(esc_url( learn_press_get_page_link( 'checkout' ) ));
+				}else{
+					$code = wp_remote_retrieve_response_code( $response );
+					if( $code === 200 && isset( $refid ) && $refid != '' ){
+						$request['transId'] = $refid;
+						$this->payment_status_completed( $order, $request );
+						wp_redirect(esc_url( $this->get_return_url( $order ) ));
+						exit();
+					}else{
+						wp_redirect(esc_url( learn_press_get_page_link( 'checkout' )  ));
+						exit();
+					}
 					exit();
 				}
-				if(!isset($_SESSION))
-					session_start();
-				$_SESSION['payping_error'] = 1;
-				wp_redirect(esc_url( learn_press_get_page_link( 'checkout' )  ));
 				exit();
 			}
 		}
@@ -389,15 +417,15 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 * @param LP_Order
 		 * @param request
 		 */
-		protected function payment_status_completed( $order, $request ) {
+		protected function payment_status_completed( $order, $request ){
 
 			// order status is already completed
-			if ( $order->has_status( 'completed' ) ) {
+			if( $order->has_status( 'completed' ) ){
 				exit;
 			}
 
 			$this->payment_complete( $order, ( !empty( $request['transId'] ) ? $request['transId'] : '' ), __( 'Payment has been successfully completed', 'learnpress-payping' ) );
-
+			update_post_meta( $order->get_id(), 'PayPing_Refid', $request['transId'] );
 		}
 
 		/**
@@ -406,7 +434,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 * @param  LP_Order
 		 * @param  request
 		 */
-		protected function payment_status_pending( $order, $request ) {
+		protected function payment_status_pending( $order, $request ){
 			$this->payment_status_completed( $order, $request );
 		}
 
@@ -415,7 +443,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 * @param string $txn_id
 		 * @param string $note - not use
 		 */
-		public function payment_complete( $order, $trans_id = '', $note = '' ) {
+		public function payment_complete( $order, $trans_id = '', $note = '' ){
 			$order->payment_complete( $trans_id );
 		}
 	}
