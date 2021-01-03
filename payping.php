@@ -15,8 +15,8 @@ defined( 'ABSPATH' ) || exit;
 
 define( 'LP_Payping_uri', plugin_dir_url( __FILE__ ) );
 define( 'LP_ADDON_PayPingPAYMENT_FILE', __FILE__ );
-define( 'LP_ADDON_PayPingPAYMENT_VER', '1.0.0' );
-define( 'LP_ADDON_PayPingPAYMENT_REQUIRE_VER', '1.0.0' );
+define( 'LP_ADDON_PayPingPAYMENT_VER', '1.1.0' );
+define( 'LP_ADDON_PayPingPAYMENT_REQUIRE_VER', '1.1.0' );
 
 /**
  * Class LP_Addon_PayPingPayment_Preload
