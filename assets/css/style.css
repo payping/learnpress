@@ -1,4 +1,7 @@
 li#learn-press-payment-method-payping label img {
-    width: 32px !important;
+	width: 32px !important;
     height: 32px !important;
+    float: right;
+    margin-left: 10px;
+    clear: both;
 }
