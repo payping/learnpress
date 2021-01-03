@@ -4,7 +4,7 @@ Plugin Name: LearnPress PayPing Gateway
 Plugin URI: https://payping.ir
 Description: PayPing payment gateway for LearnPress.
 Author: Mahdi Sarani
-Version: 1.0.0
+Version: 1.1.0
 Author URI: https://mahdisarani.ir
 Text Domain: learnpress-payping
 Domain Path: /languages/

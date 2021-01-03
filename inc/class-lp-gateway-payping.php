@@ -202,7 +202,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 */
 		public function get_icon(){
 			if ( empty( $this->icon ) ) {
-				$this->icon = plugin_dir_url( __DIR__ ) . 'assets/img/logo.png';
+				$this->icon = plugin_dir_url( __DIR__ ) . 'assets/logo.png';
 			}
 			return parent::get_icon();
 		}

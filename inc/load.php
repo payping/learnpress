@@ -72,7 +72,7 @@ if ( ! class_exists( 'LP_Addon_PayPingPayment' ) ) {
 				$user = learn_press_get_current_user();
 
 				learn_press_assets()->enqueue_script( 'learn-press-payping-payment', $this->get_plugin_url( 'assets/js/script.js' ), array() );
-				learn_press_assets()->enqueue_style( 'learn-press-payping', $this->get_plugin_url( 'assets/css/style.css' ), array() );
+//				learn_press_assets()->enqueue_style( 'learn-press-payping', $this->get_plugin_url( 'assets/css/style.css' ), array() );
 
 				$data = array(
 					'plugin_url'  => plugins_url( '', LP_ADDON_PayPingPAYMENT_FILE )
