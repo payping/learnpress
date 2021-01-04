@@ -18,6 +18,24 @@ define( 'LP_ADDON_PayPingPAYMENT_FILE', __FILE__ );
 define( 'LP_ADDON_PayPingPAYMENT_VER', '1.1.0' );
 define( 'LP_ADDON_PayPingPAYMENT_REQUIRE_VER', '1.1.0' );
 
+/**-------------------------------------------------------------------------------------------------------------------------
+ * change iranin currency and symbol in learnpress
+ */
+function payping_override_iranin_currency( $currencies ) {
+	$currencies['IRR'] = __( 'Iranian rial(payping)', 'learnpress' );
+	$currencies['IRt'] = __( 'Iranian Toman (payping)', 'learnpress' );
+	return $currencies;
+}
+
+add_filter( 'learn-press/currencies', 'payping_override_iranin_currency' );
+
+function payping_override_iranin_currency_symbol( $symbols ) {
+	$symbols['IRR'] = 'ریال';
+	$symbols['IRT'] = 'تومان';
+	return $symbols;
+}
+add_filter( 'learn-press/currency-symbols', 'payping_override_iranin_currency_symbol' );
+
 /**
  * Class LP_Addon_PayPingPayment_Preload
  */
