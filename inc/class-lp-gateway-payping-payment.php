@@ -1,12 +1,25 @@
 <?php
+/**
+ * PayPing payment gateway class.
+ *
+ * @author   Mahdi Sarani
+ * @package  LearnPress/PayPing-Payment/Classes
+ * @version  3.0.0
+ */
+
 // Prevent loading this file directly
 defined( 'ABSPATH' ) || exit;
 
-if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
+if ( ! function_exists( 'LP_Gateway_PayPing_Payment' ) ) {
 	/**
-	 * Class LP_Gateway_PayPing
+	 * Class LP_Gateway_PayPing_Payment.
 	 */
-	class LP_Gateway_PayPing extends LP_Gateway_Abstract {
+	class LP_Gateway_PayPing_Payment extends LP_Gateway_Abstract {
+
+		/**
+		 * @var LP_Settings
+		 */
+		public $settings;
 
 		/**
 		 * @var array
@@ -16,28 +29,18 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		/**
 		 * @var string
 		 */
-		private $sendUrl = 'https://api.payping.ir/v2/pay';
+		private $sendUrl = 'https://api.payping.io/v2/pay';
 		
 		/**
 		 * @var string
 		 */
-		private $gatewayUrl = 'https://api.payping.ir/v2/pay/gotoipg';
+		private $gatewayUrl = 'https://api.payping.io/v2/pay/gotoipg';
 		
 		/**
 		 * @var string
 		 */
-		private $verifyUrl = 'https://api.payping.ir/v2/pay/verify';
+		private $verifyUrl = 'https://api.payping.io/v2/pay/verify';
 		
-		/**
-		 * @var string
-		 */
-		private $token = null;
-
-		/**
-		 * @var array|null
-		 */
-		protected $settings = null;
-
 		/**
 		 * @var null
 		 */
@@ -54,133 +57,200 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		 * @var string
 		 */
 		protected $transId = null;
+		
+		/**
+		 * @var string
+		 */
+		public $id = 'payping-payment';
 
 		/**
-		 * LP_Gateway_PayPing constructor.
+		 * @var string
 		 */
-		public function __construct(){
-			$this->id = 'payping';
+		private $token = null;
+		
+		/**
+		 * @var string
+		 */
+		private $Debug_Mode = null;
+		
+		/**
+		 * Constructor for the gateway.
+		 */
+		public function __construct() {
+			parent::__construct();
 
-			$this->method_title       =  __( 'درگاه پرداخت پی‌پینگ', 'learnpress-payping' );;
-			$this->method_description = __( 'ایجاد پرداخت با پی‌پینگ.', 'learnpress-payping' );
-			$this->icon               = '';
+			$this->icon               = LP_ADDON_PAYPING_PAYMENT_URL.'assets/images/logo.png';
+			$this->method_title       = __( 'پرداخت پی‌پینگ', 'learnpress-payping-payment' );
+			$this->method_description = __( 'پرداخت آنلاین به وسیله کلیه کارت‌های عضو شتاب', 'learnpress-payping-payment' );
 
 			// Get settings
-			$this->title       = LP()->settings->get( "{$this->id}.title", $this->method_title );
-			$this->description = LP()->settings->get( "{$this->id}.description", $this->method_description );
+			$this->title        = $this->settings->get( 'title', $this->method_title );
+			$this->description  = $this->settings->get( 'description', $this->method_description );
+			$this->token        = $this->settings->get( "payping_token" );
+			$this->Debug_Mode   = $this->settings->get( "Debug_Mode" );
 
-			$settings = LP()->settings;
-
-			// Add default values for fresh installs
-			if ( $settings->get( "learn_press_{$this->id}_enable" ) ) {
-				$this->settings                     = array();
-				$this->settings['token']        = $settings->get( "learn_press_{$this->id}_token" );
-			}
-			$this->token = $this->settings['token'];
-			
-			if ( did_action( 'learn_press/payping-add-on/loaded' ) ) {
+			if ( did_action( 'learn_press/payping-payment-add-on/loaded' ) ) {
 				return;
 			}
 
-			// check payment gateway enable
 			add_filter( 'learn-press/payment-gateway/' . $this->id . '/available', array(
 				$this,
-				'payping_available'
-			), 10, 2 );
+				'payping_payment_available'
+			) );
 
-			do_action( 'learn_press/payping-add-on/loaded' );
-
-			parent::__construct();
-			
-			// web hook
-			if ( did_action( 'init' ) ) {
-				$this->register_web_hook();
-			} else {
-				add_action( 'init', array( $this, 'register_web_hook' ) );
-			}
-			add_action( 'learn_press_web_hooks_processed', array( $this, 'web_hook_process_payping' ) );
-			
-			add_action("learn-press/before-checkout-order-review", array( $this, 'error_message' ));
+			do_action( 'learn_press/payping-payment-add-on/loaded' );
 		}
-		
+
 		/**
-		 * Register web hook.
+		 * Check gateway available.
 		 *
-		 * @return array
+		 * @return bool
 		 */
-		public function register_web_hook(){
-			learn_press_register_web_hook( 'payping', 'learn_press_payping' );
+		public function payping_payment_available() {
+			if ( LP()->settings->get( "{$this->id}.enable" ) != 'yes' ) {
+				return false;
+			}
+
+			return true;
 		}
-	
+
+		protected function _get( $name ) {
+			return LP()->settings->get( $this->id . '.' . $name );
+		}
+
 		/**
 		 * Admin payment settings.
 		 *
 		 * @return array
 		 */
 		public function get_settings() {
-
-			return apply_filters( 'learn-press/gateway-payment/payping/settings',
-				array(
+			if ( version_compare( LEARNPRESS_VERSION, '4.0.0-beta-0', '>=' ) ) {
+				return apply_filters( 'learn-press/gateway-payment/payping-payment/settings',
 					array(
-						'title'   => __( 'فعالسازی', 'learnpress-payping' ),
-						'id'      => '[enable]',
-						'default' => 'yes',
-						'type'    => 'yes-no'
-					),
-					array(
-						'type'       => 'text',
-						'title'      => __( 'عنوان', 'learnpress-payping' ),
-						'default'    => __( 'PayPing', 'learnpress-payping' ),
-						'id'         => 'title',
-						'class'      => 'regular-text',
-						'visibility' => array(
-							'state'       => 'show',
-							'conditional' => array(
-								array(
-									'field'   => '[enable]',
-									'compare' => '=',
-									'value'   => 'yes'
-								)
-							)
-						)
-					),
-					array(
-						'type'       => 'textarea',
-						'title'      => __( 'توضیحات', 'learnpress-payping' ),
-						'default'    => __( 'پرداخت با پی‌پینگ', 'learnpress-payping' ),
-						'id'         => 'description',
-						'editor'     => array(
-							'textarea_rows' => 5
+						array(
+							'type' => 'title',
 						),
-						'css'        => 'height: 50px;',
-						'visibility' => array(
-							'state'       => 'show',
-							'conditional' => array(
-								array(
-									'field'   => '[enable]',
-									'compare' => '=',
-									'value'   => 'yes'
+						array(
+							'title'   => __( 'فعالسازی', 'learnpress-payping-payment' ),
+							'id'      => '[enable]',
+							'default' => 'no',
+							'type'    => 'checkbox'
+						),
+						array(
+							'title'   => __( 'عنوان درگاه', 'learnpress-payping-payment' ),
+							'id'      => '[title]',
+							'default' => $this->title,
+							'type'    => 'text',
+						),
+						array(
+							'title'   => __( 'توضیحات', 'learnpress-payping-payment' ),
+							'id'      => '[description]',
+							'default' => $this->description,
+							'type'    => 'textarea',
+						),
+						array(
+							'title'   => __( 'توکن', 'learnpress-payping-payment' ),
+							'id'      => '[payping_token]',
+							'default' => $this->token,
+							'type'    => 'text',
+						),
+						array(
+							'title'   => __( 'حالت اشکال زدایی', 'learnpress-payping-payment' ),
+							'id'      => '[Debug_Mode]',
+							'default' => 'no',
+							'type'    => 'checkbox',
+							'desc'    => __( 'این حالت فقط در زمان اشکال زدایی فعال شود!' ),
+						),
+						array(
+							'type' => 'sectionend',
+						),
+					)
+				);
+			} else {
+				return apply_filters( 'learn-press/gateway-payment/payping-payment/settings',
+					array(
+						array(
+							'title'   => __( 'فعالسازی', 'learnpress-payping-payment' ),
+							'id'      => '[enable]',
+							'default' => 'no',
+							'type'    => 'yes-no'
+						),
+						array(
+							'title'      => __( 'عنوان', 'learnpress-payping-payment' ),
+							'id'         => '[title]',
+							'default'    => $this->title,
+							'type'       => 'text',
+							'visibility' => array(
+								'state'       => 'show',
+								'conditional' => array(
+									array(
+										'field'   => '[enable]',
+										'compare' => '=',
+										'value'   => 'yes'
+									)
 								)
 							)
-						)
-					),
-					array(
-						'title'      => __( 'توکن پی‌پینگ', 'learnpress-payping' ),
-						'id'         => 'token',
-						'type'       => 'text',
-						'visibility' => array(
-							'state'       => 'show',
-							'conditional' => array(
-								array(
-									'field'   => '[enable]',
-									'compare' => '=',
-									'value'   => 'yes'
+						),
+						array(
+							'title'      => __( 'توضیحات', 'learnpress-payping-payment' ),
+							'id'         => '[description]',
+							'default'    => $this->description,
+							'type'       => 'textarea',
+							'editor'     => array( 'textarea_rows' => 5 ),
+							'visibility' => array(
+								'state'       => 'show',
+								'conditional' => array(
+									array(
+										'field'   => '[enable]',
+										'compare' => '=',
+										'value'   => 'yes'
+									)
+								)
+							)
+						),
+						array(
+							'title'      => __( 'توکن', 'learnpress-payping-payment' ),
+							'id'         => '[payping_token]',
+							'default'    => $this->token,
+							'type'       => 'text',
+							'visibility' => array(
+								'state'       => 'show',
+								'conditional' => array(
+									array(
+										'field'   => '[enable]',
+										'compare' => '=',
+										'value'   => 'yes'
+									)
+								)
+							)
+						),
+						array(
+							'title'      => __( 'اشکال زدایی', 'learnpress-payping-payment' ),
+							'id'         => '[Debug_Mode]',
+							'default'    => 'no',
+							'type'       => 'yes-no',
+							'desc'       => __( 'زمانیکه قصد اشکال زدایی دارید فعال شود.' ),
+							'visibility' => array(
+								'state'       => 'show',
+								'conditional' => array(
+									array(
+										'field'   => '[enable]',
+										'compare' => '=',
+										'value'   => 'yes'
+									)
 								)
 							)
 						)
 					)
-				)
-			);
+				);
+			}
+		}
+
+		/**
+		 * Payment form.
+		 */
+		public function get_payment_form() {
+			return LP()->settings->get( $this->id . '.description' );
 		}
 
 		/**
@@ -198,26 +268,13 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		}
 		
 		/**
-		 * @return mixed
-		 */
-		public function get_icon(){
-			if ( empty( $this->icon ) ) {
-				$this->icon = plugin_dir_url( __DIR__ ) . 'assets/logo.png';
-			}
-			return parent::get_icon();
-		}
-
-		/**
-		 * Check gateway available.
+		 * Process the payment and return the result
 		 *
-		 * @return bool
+		 * @param $order_id
+		 *
+		 * @return array
+		 * @throws Exception
 		 */
-		public function payping_available(){
-			if( LP()->settings->get( "learn_press_{$this->id}_enable" ) != 'yes' ) {
-				return false;
-			}
-			return true;
-		}
 		
 		/**
 		 * Get form data.
@@ -267,17 +324,10 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 			return $error ? false : true;
 		}
 		
-		/**
-		 * PayPing payment process.
-		 *
-		 * @param $order
-		 *
-		 * @return array
-		 * @throws string
-		 */
 		public function process_payment( $order ){
 			$this->order = learn_press_get_order( $order );
 			$payping = $this->send();
+			
 			$gateway_url = $this->gatewayUrl;
 			
 			$json = array(
@@ -287,7 +337,6 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 
 			return $json;
 		}
-
 		
 		/**
 		 * Send.
@@ -357,8 +406,8 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 			}
 			return false;
 		}
-
-		/**
+		
+				/**
 		 * Handle a web hook
 		 *
 		 */
@@ -446,5 +495,7 @@ if ( ! class_exists( 'LP_Gateway_PayPing' ) ) {
 		public function payment_complete( $order, $trans_id = '', $note = '' ){
 			$order->payment_complete( $trans_id );
 		}
+		
+		/* */
 	}
 }
