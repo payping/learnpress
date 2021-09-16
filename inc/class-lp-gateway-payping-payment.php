@@ -92,7 +92,16 @@ if ( ! function_exists( 'LP_Gateway_PayPing_Payment' ) ) {
 			if ( did_action( 'learn_press/payping-payment-add-on/loaded' ) ) {
 				return;
 			}
-
+			
+			// web hook
+			if( did_action( 'init' ) ){
+				$this->register_web_hook();
+			} else {
+				add_action( 'init', array( $this, 'register_web_hook' ) );
+			}
+			add_action( 'learn_press_web_hooks_processed', array( $this, 'web_hook_process_payping' ) );
+			add_action("learn-press/before-checkout-order-review", array( $this, 'error_message' ));
+			
 			add_filter( 'learn-press/payment-gateway/' . $this->id . '/available', array(
 				$this,
 				'payping_payment_available'
@@ -116,6 +125,15 @@ if ( ! function_exists( 'LP_Gateway_PayPing_Payment' ) ) {
 
 		protected function _get( $name ) {
 			return LP()->settings->get( $this->id . '.' . $name );
+		}
+		
+		/**
+		 * Register web hook.
+		 *
+		 * @return array
+		 */
+		public function register_web_hook() {
+			learn_press_register_web_hook( 'payping', 'learn_press_payping' );
 		}
 
 		/**
@@ -354,8 +372,9 @@ if ( ! function_exists( 'LP_Gateway_PayPing_Payment' ) ) {
 				$currency = $this->form_data['currency'];
 				$TokenCode = $this->form_data['token'];
 				
-				$returnUrl = get_site_url() . '/?' . learn_press_get_web_hook( 'payping' ) . '=1&order_id='.$this->order->get_id();
-
+				$returnUrl = get_site_url().'/?'.learn_press_get_web_hook( 'payping' ).'=1&order_id='.$this->order->get_id();
+				
+				
 				$params = array(
                         'amount'        => $amount,
                         'returnUrl'     => $returnUrl,
