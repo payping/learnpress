@@ -1,15 +1,17 @@
 <?php
 /**
- * Plugin Name: LearnPress - PayPing Payment
+ * Plugin Name: PayPing Learnpress
  * Plugin URI: https://payping.ir
- * Description: Make a payment with PayPing.ir.
+ * Description: درگاه پرداخت پی پینگ برای افزونه Learnpress
  * Author: Mahdi Sarani
- * Version: 4.0.0
+ * Version: 4.1.0
  * Author URI: https://mahdisarani.ir
  * Tags: learnpress, payping
  * Text Domain: learnpress-payping
  * Domain Path: /languages/
+ * Requires Plugins: learnpress
  * Require_LP_Version: 3.0.0
+ * License: GPLv3 or later
  *
  * @package LearnPress-PayPing-Payment
  */
